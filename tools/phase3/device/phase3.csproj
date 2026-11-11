@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Phase 3 第 3、4 題的測試 app：手機的宿主程序裡依序跑 patch → AssetRipper 匯出 → importer → shaders。
+       從 tools/phase2 的 app 拆出來：importer、shaders、AssetRipper 直接參考專案（importer 已經參考 AssetRipper.Import，
+       同一個組件不能再從 files/ 反射載入一份）；patcher 照 Phase 2 從 APK 的 assets 解出來、反射呼叫。 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Mt2Mobile.Phase3</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationId>org.mt2mobile.phase3</ApplicationId>
+    <ApplicationTitle>MT2 Phase 3 runner</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <RuntimeIdentifier>android-arm64</RuntimeIdentifier>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <AndroidEnableMarshalMethods>false</AndroidEnableMarshalMethods>
+    <!-- 同桌面命令列（mt2-importer、mt2-shaders）：workstation、非並行 GC -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <AssetRipperSource Condition="'$(AssetRipperSource)' == ''">$(MSBuildThisFileDirectory)../../../third_party/AssetRipper/build/src/Source</AssetRipperSource>
+    <Phase3PatcherDir Condition="'$(Phase3PatcherDir)' == ''">$(MSBuildThisFileDirectory)../../../build/unity-native/patcher</Phase3PatcherDir>
+    <UnityNativeDll Condition="'$(UnityNativeDll)' == ''">$(MSBuildThisFileDirectory)../../../build/unity-native/hand/UnityNative.dll</UnityNativeDll>
+    <!-- 預設是 MT2；其他遊戲由 build.sh 明確傳入 hand DLL 與 redirects -->
+    <EngineRedirects Condition="'$(EngineRedirects)' == ''">$(MSBuildThisFileDirectory)../../../src/Glue.Facepunch/redirects.txt</EngineRedirects>
+    <GameRedirects Condition="'$(GameRedirects)' == ''">$(MSBuildThisFileDirectory)../../../src/Glue.MT2/redirects.txt</GameRedirects>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/Importer/Importer.csproj" />
+    <ProjectReference Include="../../../src/Shaders/Shaders.csproj" />
+    <ProjectReference Include="$(AssetRipperSource)/AssetRipper.Export.UnityProjects/AssetRipper.Export.UnityProjects.csproj" />
+    <!-- AssetRipper.Cpp2IL.Core 帶進來的 libcapstone.so 是 linux-arm64 版（XA0141）：直接參考同一版、排除原生資產（Phase 2 排除非 Android 的 runtimes/） -->
+    <PackageReference Include="AssetRipper.Gee.External.Capstone" Version="2.3.2" ExcludeAssets="native" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- native/*/build.sh android 編出來的 .so；C# 用短名稱（freetype、dxbcspv、spirv-cross-c-shared）載入 -->
+    <AndroidNativeLibrary Include="../../../native/freetype/build/out/android-arm64/libfreetype.so" Abi="arm64-v8a" />
+    <AndroidNativeLibrary Include="../../../native/dxbc-spirv/build/out/android-arm64/libdxbcspv.so" Abi="arm64-v8a" />
+    <AndroidNativeLibrary Include="../../../native/spirv-cross/build/out/android-arm64/libspirv-cross-c-shared.so" Abi="arm64-v8a" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AndroidAsset Include="$(Phase3PatcherDir)/*.dll;$(Phase3PatcherDir)/*.json" Link="phase3/patcher/%(Filename)%(Extension)" />
+    <AndroidAsset Include="$(UnityNativeDll)" Link="phase3/input/UnityNative.dll" />
+    <!-- RunnerService 照檔名順序傳給 patcher：引擎的在前、遊戲的在後 -->
+    <AndroidAsset Include="$(EngineRedirects)" Link="phase3/redirects/1-engine.txt" />
+    <AndroidAsset Include="$(GameRedirects)" Link="phase3/redirects/2-game.txt" />
+  </ItemGroup>
+
+  <Target Name="RequirePhase3Inputs" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(Phase3PatcherDir)/patcher.dll')" Text="先用 Release 編 src/Patcher（build.sh 會做）" />
+    <Error Condition="!Exists('$(UnityNativeDll)')" Text="缺手寫引擎 $(UnityNativeDll)" />
+    <Error Condition="!Exists('$(EngineRedirects)') Or !Exists('$(GameRedirects)')" Text="缺 redirects：$(EngineRedirects)、$(GameRedirects)" />
+    <Error Condition="!Exists('../../../native/dxbc-spirv/build/out/android-arm64/libdxbcspv.so')" Text="先跑 native/*/build.sh android" />
+  </Target>
+</Project>

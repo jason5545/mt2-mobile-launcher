@@ -1,0 +1,15 @@
+# MT2 專屬的 patch 設定（unity-native/build.sh 的 GAME_REDIRECTS 預設讀這份）
+# 舊版 Addressables（ShinyShoe 分支）的 CachedProvider 用位置物件的預設雜湊當 Dictionary<int, …> 的 key：
+# CoreCLR 的物件雜湊只有約 26 位元，3769 個位置有一成機率撞，撞到就把別的素材當成這個（10/19 實測：Sprite 拿到 BundleStartsLoaded）。
+# 補一個每個實例一個流水號的 GetHashCode（Unity 的 Mono 用位址算雜湊，原版幾乎不會撞）
+uniquehash Unity.ResourceManager|UnityEngine.ResourceManagement.ResourceLocations.ResourceLocationBase
+uniquehash Unity.ResourceManager|UnityEngine.ResourceManagement.ResourceLocations.LegacyResourcesLocation
+uniquehash Unity.Addressables|UnityEngine.AddressableAssets.ResourceLocators.ContentCatalogData/CompactLocation
+
+# 手機（Android）的處理，規則同 src/main.ts：程式在 native/glue/Glue.MT2/Phone.cs（after：原版跑完、每個 return 之前叫 Phone 的同名方法）
+Assembly-CSharp|ShinyShoe.SteamPlatformServices::HasFixedResolution => Glue.MT2|Glue.MT2.Phone
+after Assembly-CSharp|SettingsDialog::Initialize => Glue.MT2|Glue.MT2.Phone
+after Assembly-CSharp|FirstTimeSettingsScreen::Initialize => Glue.MT2|Glue.MT2.Phone
+after Assembly-CSharp|Hud::Start => Glue.MT2|Glue.MT2.Phone
+after Assembly-CSharp|GraphicsSettingsManager::Start => Glue.MT2|Glue.MT2.Phone
+after Assembly-CSharp|ShinyShoe.CoreInputDriverMouse::OnLateUpdate => Glue.MT2|Glue.MT2.Phone

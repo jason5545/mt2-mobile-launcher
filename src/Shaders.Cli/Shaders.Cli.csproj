@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 桌面命令列：讀跟 unity-cs2ts/importer/run.py 一樣的設定檔，做 shaders 步驟（轉換加發布），給開發機產生基準與比對用 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Mt2Mobile.Shaders.Cli</RootNamespace>
+    <AssemblyName>mt2-shaders</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- macos：-O2 加 assert（跟 Android 相同）；-p:DxbcSpirvFlavor=osx-arm64-ref 換成參考命令列的建置設定 -->
+    <DxbcSpirvFlavor Condition="'$(DxbcSpirvFlavor)' == ''">osx-arm64</DxbcSpirvFlavor>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Shaders/Shaders.csproj" />
+  </ItemGroup>
+
+  <!-- 原生函式庫：native/dxbc-spirv/build.sh、native/spirv-cross/build.sh 編出來的 dylib -->
+  <ItemGroup>
+    <None Include="../../native/dxbc-spirv/build/out/$(DxbcSpirvFlavor)/libdxbcspv.dylib" Condition="Exists('../../native/dxbc-spirv/build/out/$(DxbcSpirvFlavor)/libdxbcspv.dylib')"
+          Link="libdxbcspv.dylib" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../native/spirv-cross/build/out/osx-arm64/libspirv-cross-c-shared.dylib" Condition="Exists('../../native/spirv-cross/build/out/osx-arm64/libspirv-cross-c-shared.dylib')"
+          Link="libspirv-cross-c-shared.dylib" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 啟動器的 Steam 層：連 CM、登入（QR、帳號密碼加 Steam Guard、refresh token）、授權檢查。
+       純 net10.0，不參考 Android，桌面上也能跑。SteamKit2 是 LGPL-2.1-only，見 docs/steam-spike.md 的「授權」。 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Mt2Mobile.Steam</RootNamespace>
+    <AssemblyName>Mt2Mobile.Steam</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SteamKit2" Version="3.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 測試用的時序鉤子（SteamAccessGeneration.BetweenReadAndMarkerCheck） -->
+    <InternalsVisibleTo Include="Steam.Tests" />
+  </ItemGroup>
+</Project>

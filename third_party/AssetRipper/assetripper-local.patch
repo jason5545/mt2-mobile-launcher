@@ -1,0 +1,375 @@
+diff --git a/Source/AssetRipper.CLI/AssetRipper.CLI.csproj b/Source/AssetRipper.CLI/AssetRipper.CLI.csproj
+new file mode 100644
+index 0000000..ef39513
+--- /dev/null
++++ b/Source/AssetRipper.CLI/AssetRipper.CLI.csproj
+@@ -0,0 +1,15 @@
++<Project Sdk="Microsoft.NET.Sdk">
++
++  <PropertyGroup>
++    <OutputType>Exe</OutputType>
++    <TargetFramework>net10.0</TargetFramework>
++    <ImplicitUsings>enable</ImplicitUsings>
++    <Nullable>enable</Nullable>
++  </PropertyGroup>
++
++  <ItemGroup>
++    <ProjectReference Include="..\AssetRipper.Export.UnityProjects\AssetRipper.Export.UnityProjects.csproj" />
++    <ProjectReference Include="..\AssetRipper.Import\AssetRipper.Import.csproj" />
++  </ItemGroup>
++
++</Project>
+diff --git a/Source/AssetRipper.CLI/Program.cs b/Source/AssetRipper.CLI/Program.cs
+new file mode 100644
+index 0000000..dc8b54b
+--- /dev/null
++++ b/Source/AssetRipper.CLI/Program.cs
+@@ -0,0 +1,96 @@
++using AssetRipper.Export.Configuration;
++using AssetRipper.Export.UnityProjects;
++using AssetRipper.Import.Logging;
++using AssetRipper.IO.Files;
++
++namespace AssetRipper.CLI;
++
++class Program
++{
++    static void Main(string[] args)
++    {
++        // Handle --test
++        if (args.Length > 0 && args[0] == "--test")
++        {
++            Environment.Exit(Tests.Run());
++            return;
++        }
++
++        if (args.Length < 2)
++        {
++            Console.WriteLine("Usage: AssetRipper.CLI <input_path> <output_path> [options]");
++            Console.WriteLine("       AssetRipper.CLI --test");
++            Console.WriteLine();
++            Console.WriteLine("Options:");
++            Console.WriteLine("  --dll-no-rename       Export DLLs without renaming (preserves original names)");
++            Console.WriteLine("  --dll-rename          Export DLLs with compatible renaming");
++            Console.WriteLine("  --decompile           Decompile scripts to C# (default)");
++            Console.WriteLine("  --decompile-game-only Decompile only game scripts (Assembly-CSharp)");
++            Console.WriteLine("  --shader-yaml         Export shaders as YAML assets (preserves compiled bytecode)");
++            Console.WriteLine("  --shader-decompile    Decompile shaders to HLSL source code");
++            Console.WriteLine("  --test                Run tests");
++            return;
++        }
++
++        string inputPath = args[0];
++        string outputPath = args[1];
++
++        // Parse options
++        ScriptExportMode scriptMode = ScriptExportMode.Hybrid;
++        ShaderExportMode shaderMode = ShaderExportMode.Dummy;
++        for (int i = 2; i < args.Length; i++)
++        {
++            switch (args[i])
++            {
++                case "--dll-no-rename":
++                    scriptMode = ScriptExportMode.DllExportWithoutRenaming;
++                    break;
++                case "--dll-rename":
++                    scriptMode = ScriptExportMode.DllExportWithRenaming;
++                    break;
++                case "--decompile":
++                    scriptMode = ScriptExportMode.Decompiled;
++                    break;
++                case "--decompile-game-only":
++                    scriptMode = ScriptExportMode.DecompiledGameOnly;
++                    break;
++                case "--shader-yaml":
++                    shaderMode = ShaderExportMode.Yaml;
++                    break;
++                case "--shader-decompile":
++                    shaderMode = ShaderExportMode.Decompile;
++                    break;
++            }
++        }
++
++        // Setup logging
++        Logger.Add(new ConsoleLogger());
++        Logger.LogSystemInformation("AssetRipper CLI");
++
++        // Create configuration
++        FullConfiguration settings = new();
++        settings.ExportSettings.ScriptExportMode = scriptMode;
++        settings.ExportSettings.ShaderExportMode = shaderMode;
++
++        Console.WriteLine($"Script Export Mode: {scriptMode}");
++        Console.WriteLine($"Shader Export Mode: {shaderMode}");
++        Console.WriteLine($"Input: {inputPath}");
++        Console.WriteLine($"Output: {outputPath}");
++        Console.WriteLine();
++
++        // Export
++        ExportHandler handler = new(settings);
++
++        try
++        {
++            handler.LoadProcessAndExport(new[] { inputPath }, outputPath, LocalFileSystem.Instance);
++            Console.WriteLine("Export completed successfully!");
++        }
++        catch (Exception ex)
++        {
++            Console.WriteLine($"Export failed: {ex.Message}");
++            Console.WriteLine(ex.StackTrace);
++            Environment.Exit(1);
++        }
++    }
++}
+diff --git a/Source/AssetRipper.CLI/Tests.cs b/Source/AssetRipper.CLI/Tests.cs
+new file mode 100644
+index 0000000..22e70a5
+--- /dev/null
++++ b/Source/AssetRipper.CLI/Tests.cs
+@@ -0,0 +1,84 @@
++using AssetRipper.Export.UnityProjects.Scripts;
++using System.Security.Cryptography;
++using System.Text;
++
++namespace AssetRipper.CLI;
++
++public static class Tests
++{
++    public static int Run()
++    {
++        Console.WriteLine("=== AssetRipper CLI Tests ===\n");
++
++        int passed = 0;
++        int failed = 0;
++
++        // Test 1: FileID calculation
++        Console.WriteLine("Test 1: FileID Calculation (ScriptHashing)");
++        var fileIdTests = new (string ns, string name, int expected)[]
++        {
++            ("UnityEngine", "Component", 468326297),
++            ("UnityEngine", "GameObject", -1741091355),
++            ("UnityEngine", "MonoBehaviour", 888015496),
++            ("UnityEngine", "Object", 350709172),
++        };
++
++        foreach (var (ns, name, expected) in fileIdTests)
++        {
++            int calculated = ScriptHashing.CalculateScriptFileID(ns, name);
++            bool ok = calculated == expected;
++            Console.WriteLine($"  {(ok ? "✓" : "✗")} {ns}.{name}: {calculated} (expected {expected})");
++            if (ok) passed++; else failed++;
++        }
++
++        // Test 2: Assembly GUID calculation
++        Console.WriteLine("\nTest 2: Assembly GUID Calculation");
++        var guidTests = new (string assemblyName, string expectedGuid)[]
++        {
++            ("Assembly-CSharp", "543ddd06bf16ea43368cc39ff96e6d5a"),
++            ("Assembly-CSharp-firstpass", "bc60a4a6da9ca868c89553f1ec5be757"),
++        };
++
++        foreach (var (assemblyName, expectedGuid) in guidTests)
++        {
++            string calculated = CalculateAssemblyGuidRaw(assemblyName);
++            bool ok = calculated == expectedGuid;
++            Console.WriteLine($"  {(ok ? "✓" : "✗")} {assemblyName}: {calculated}");
++            if (ok) passed++; else failed++;
++        }
++
++        // Test 3: Game-specific types (no namespace)
++        Console.WriteLine("\nTest 3: Game Types (no namespace)");
++        var gameTypes = new (string ns, string name, int expectedFileId)[]
++        {
++            ("", "AllGameData", 1915479307),
++            ("", "AllGameManagers", 1417479432),
++            ("", "ScreenManager", 219008051),
++            ("", "SaveManager", -285757688),
++        };
++
++        foreach (var (ns, name, expected) in gameTypes)
++        {
++            int calculated = ScriptHashing.CalculateScriptFileID(ns, name);
++            bool ok = calculated == expected;
++            Console.WriteLine($"  {(ok ? "✓" : "✗")} {name}: {calculated} (expected {expected})");
++            if (ok) passed++; else failed++;
++        }
++
++        // Summary
++        Console.WriteLine($"\n=== Results: {passed} passed, {failed} failed ===");
++        return failed > 0 ? 1 : 0;
++    }
++
++    private static string CalculateAssemblyGuidRaw(string assemblyName)
++    {
++        // Remove .dll extension if present
++        if (assemblyName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
++        {
++            assemblyName = assemblyName[..^4];
++        }
++
++        byte[] hash = MD5.HashData(Encoding.UTF8.GetBytes(assemblyName));
++        return Convert.ToHexString(hash).ToLowerInvariant();
++    }
++}
+diff --git a/Source/AssetRipper.Export.UnityProjects/Scripts/ReferenceAssemblies.cs b/Source/AssetRipper.Export.UnityProjects/Scripts/ReferenceAssemblies.cs
+index 9e6dc0d..a311319 100644
+--- a/Source/AssetRipper.Export.UnityProjects/Scripts/ReferenceAssemblies.cs
++++ b/Source/AssetRipper.Export.UnityProjects/Scripts/ReferenceAssemblies.cs
+@@ -6,7 +6,7 @@ namespace AssetRipper.Export.UnityProjects.Scripts;
+ public static class ReferenceAssemblies
+ {
+ 	private static readonly AssemblyDataFile assemblyDataFile = AssemblyDataFile.Load();
+-	private static UnityGuid UnityEngineGUID => new UnityGuid(0x1F55507F, 0xA1948D44, 0x4080F528, 0xC176C90E);
++	public static UnityGuid UnityEngineGUID => new UnityGuid(0x1F55507F, 0xA1948D44, 0x4080F528, 0xC176C90E);
+ 
+ 	public static bool IsPredefinedAssembly(string assemblyName)
+ 	{
+@@ -19,6 +19,36 @@ public static class ReferenceAssemblies
+ 			or "Assembly-UnityScript-firstpass";
+ 	}
+ 
++	public static bool IsUnityPackageAssembly(string assemblyName)
++	{
++		return assemblyName.StartsWith("Unity.", StringComparison.Ordinal)
++			|| assemblyName.StartsWith("UnityEngine.", StringComparison.Ordinal)
++			|| assemblyName.StartsWith("UnityEditor.", StringComparison.Ordinal);
++	}
++
++	/// <summary>
++	/// Infrastructure packages that are safe to skip (use Package Manager versions).
++	/// These packages typically aren't modified by games.
++	/// </summary>
++	public static bool IsUnityInfrastructurePackage(string assemblyName)
++	{
++		return assemblyName is
++			"Unity.Burst" or "Unity.Burst.Unsafe" or
++			"Unity.Collections" or "Unity.Collections.LowLevel.ILSupport" or
++			"Unity.Mathematics" or
++			"Unity.TextMeshPro" or
++			"Unity.Timeline" or
++			"Unity.Postprocessing.Runtime" or
++			"Unity.RenderPipelines.Core.Runtime" or
++			"Unity.RenderPipelines.Core.ShaderLibrary" or
++			"Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary" or
++			"Unity.Profiling.Core" or
++			"Unity.MemoryProfiler" or
++			"Unity.Recorder" or "Unity.Recorder.Base" or
++			"Unity.ScriptableBuildPipeline" or
++			"Unity.AI.Navigation";
++	}
++
+ 	public static Dictionary<string, UnityGuid> GetReferenceAssemblies(IAssemblyManager assemblyManager, UnityVersion version)
+ 	{
+ 		Debug.Assert(assemblyDataFile.Assemblies.Count > 0);
+@@ -42,6 +72,21 @@ public static class ReferenceAssemblies
+ 		// Todo: investigate why 5.4.0a0 does not have UnityEngine
+ 		referenceAssemblies.TryAdd("UnityEngine", UnityEngineGUID);
+ 
++		// Known Unity package assembly GUIDs (from .asmdef.meta in packages)
++		// These are stable across Unity versions as they're set by package authors.
++		// Without these, CreateSkipPointer() falls back to UnityEngineGUID which causes
++		// missing script references for UI components etc.
++		referenceAssemblies.TryAdd("UnityEngine.UI", UnityGuid.Parse("2bafac87e7f4b9b418d9448d219b01ab"));
++		referenceAssemblies.TryAdd("UnityEditor.UI", UnityGuid.Parse("343deaaf83e0cee4ca978e7df0b80d21"));
++		referenceAssemblies.TryAdd("Unity.TextMeshPro", UnityGuid.Parse("6055be8ebefd69e48b49212b09b47b2f"));
++		referenceAssemblies.TryAdd("Unity.Burst", UnityGuid.Parse("2665a8d13d1b3f18800f46e256720795"));
++		referenceAssemblies.TryAdd("Unity.Collections", UnityGuid.Parse("e0cd26848372d4e5c891c569017e11f1"));
++		referenceAssemblies.TryAdd("Unity.Mathematics", UnityGuid.Parse("d8b63aba1907145bea998dd612889d6b"));
++		referenceAssemblies.TryAdd("Unity.Timeline", UnityGuid.Parse("f06555f75b070af458a003d92f9efb00"));
++		referenceAssemblies.TryAdd("Unity.Postprocessing.Runtime", UnityGuid.Parse("d60799ab2a985554ea1a39cd38695018"));
++		referenceAssemblies.TryAdd("Unity.RenderPipelines.Core.Runtime", UnityGuid.Parse("df380645f10b7bc4b97d4f5eb6303d95"));
++		referenceAssemblies.TryAdd("Unity.AI.Navigation", UnityGuid.Parse("8c4dd21966739024fbd72155091d199e"));
++
+ 		return referenceAssemblies;
+ 
+ 		static IReadOnlyList<string> GetMonoAssemblies(IAssemblyManager assemblyManager, AssemblyData assemblyData)
+diff --git a/Source/AssetRipper.Export.UnityProjects/Scripts/ScriptExporter.cs b/Source/AssetRipper.Export.UnityProjects/Scripts/ScriptExporter.cs
+index 6dc55d6..b5d8bea 100644
+--- a/Source/AssetRipper.Export.UnityProjects/Scripts/ScriptExporter.cs
++++ b/Source/AssetRipper.Export.UnityProjects/Scripts/ScriptExporter.cs
+@@ -4,6 +4,7 @@ using AssetRipper.Import.Structure.Assembly;
+ using AssetRipper.Import.Structure.Assembly.Managers;
+ using AssetRipper.SourceGenerated;
+ using AssetRipper.SourceGenerated.Classes.ClassID_115;
++using System.Text;
+ 
+ namespace AssetRipper.Export.UnityProjects.Scripts;
+ 
+@@ -67,12 +68,38 @@ public class ScriptExporter : IAssetExporter
+ 	{
+ 		return GetExportType(script) switch
+ 		{
+-			AssemblyExportType.Decompile => new(MonoScriptDecompiledFileID, ScriptHashing.CalculateScriptGuid(script), AssetType.Meta),
+-			AssemblyExportType.Skip => new(ScriptHashing.CalculateScriptFileID(script), ReferenceAssemblyDictionary[script.GetAssemblyNameFixed()], AssetType.Meta),
++			AssemblyExportType.Decompile => CreateDecompilePointer(script),
++			AssemblyExportType.Skip => CreateSkipPointer(script),
+ 			_ => new(ScriptHashing.CalculateScriptFileID(script), ScriptHashing.CalculateAssemblyGuid(script), AssetType.Meta),
+ 		};
+ 	}
+ 
++	private MetaPtr CreateDecompilePointer(IMonoScript script)
++	{
++		string className = script.ClassName_R.String;
++		int slashIndex = className.IndexOf('/');
++		if (slashIndex >= 0)
++		{
++			// Nested class: use outer class's GUID (matches the .cs.meta) + calculated fileID for uniqueness
++			string outerClassName = className.Substring(0, slashIndex);
++			ReadOnlySpan<byte> assemblyName = Encoding.UTF8.GetBytes(script.GetAssemblyNameFixed());
++			ReadOnlySpan<byte> ns = script.Namespace.Data;
++			ReadOnlySpan<byte> cn = Encoding.UTF8.GetBytes(outerClassName);
++			UnityGuid outerGuid = ScriptHashing.CalculateScriptGuid(assemblyName, ns, cn);
++			return new(ScriptHashing.CalculateScriptFileID(script), outerGuid, AssetType.Meta);
++		}
++		return new(MonoScriptDecompiledFileID, ScriptHashing.CalculateScriptGuid(script), AssetType.Meta);
++	}
++
++	private MetaPtr CreateSkipPointer(IMonoScript script)
++	{
++		string assemblyName = script.GetAssemblyNameFixed();
++		UnityGuid guid = ReferenceAssemblyDictionary.TryGetValue(assemblyName, out var knownGuid)
++			? knownGuid
++			: ReferenceAssemblies.UnityEngineGUID;
++		return new(ScriptHashing.CalculateScriptFileID(script), guid, AssetType.Meta);
++	}
++
+ 	public AssemblyExportType GetExportType(string assemblyName)
+ 	{
+ 		if (ReferenceAssemblyDictionary.ContainsKey(assemblyName))
+@@ -93,6 +120,23 @@ public class ScriptExporter : IAssetExporter
+ 				? AssemblyExportType.Decompile
+ 				: AssemblyExportType.Save;
+ 		}
++		else if (ExportMode is ScriptExportMode.DecompiledGameOnly)
++		{
++			// Skip Unity infrastructure packages (use Package Manager versions)
++			if (ReferenceAssemblies.IsUnityInfrastructurePackage(assemblyName))
++			{
++				return AssemblyExportType.Skip;
++			}
++			// Skip UnityEngine/UnityEditor assemblies (provided by Unity packages, not game code)
++			// e.g. UnityEngine.UI, UnityEngine.CoreModule, UnityEditor.CoreModule
++			if (assemblyName.StartsWith("UnityEngine.", StringComparison.Ordinal)
++				|| assemblyName.StartsWith("UnityEditor.", StringComparison.Ordinal))
++			{
++				return AssemblyExportType.Skip;
++			}
++			// Decompile everything else (game code, third-party libs, Unity functional packages like Unity.Addressables)
++			return AssemblyExportType.Decompile;
++		}
+ 		else
+ 		{
+ 			return AssemblyExportType.Save;
+diff --git a/Source/AssetRipper.Export/Configuration/ScriptExportMode.cs b/Source/AssetRipper.Export/Configuration/ScriptExportMode.cs
+index ae68adf..8c18834 100644
+--- a/Source/AssetRipper.Export/Configuration/ScriptExportMode.cs
++++ b/Source/AssetRipper.Export/Configuration/ScriptExportMode.cs
+@@ -18,4 +18,8 @@ public enum ScriptExportMode
+ 	/// Export assemblies in their compiled Dll form. Experimental. Might not work at all.
+ 	/// </summary>
+ 	DllExportWithoutRenaming,
++	/// <summary>
++	/// Only decompile game assemblies (Assembly-CSharp, etc.). Unity packages are skipped.
++	/// </summary>
++	DecompiledGameOnly,
+ }

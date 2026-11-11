@@ -1,0 +1,8 @@
+<Project>
+  <!-- src/UnityNative 是 unity-port 引擎的副本（tools/sync-engine.sh），UnityNative.csproj 兩邊逐檔相同，這個 repo 自己的預設值放這裡。
+       只套在引擎上；其他專案照舊用自己 csproj 裡的設定 -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'UnityNative'">
+    <!-- 沒用 -p:ManagedDir= 指定時（IDE、手動編）用 build/unity-native/managed；tools/phase4/build.sh 傳它自己 patch 出來的 -->
+    <ManagedDir Condition="'$(ManagedDir)' == ''">$(MSBuildThisFileDirectory)../build/unity-native/managed</ManagedDir>
+  </PropertyGroup>
+</Project>

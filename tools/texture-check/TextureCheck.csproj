@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 貼圖原始壓縮資料的比對工具（docs/perf-battle.md「B 段」）：在開發機讀原版（AssetRipper），跟手機轉出來的貼圖逐位元組比。
+       用 dotnet run 跑，指令與參數見 Program.cs 開頭 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>texture-check</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/TextureExport/TextureExport.csproj" />
+    <!-- 同啟動器：AssetRipper.Cpp2IL.Core 帶的 capstone 原生檔不用 -->
+    <PackageReference Include="AssetRipper.Gee.External.Capstone" Version="2.3.2" ExcludeAssets="native" />
+    <PackageReference Include="StbImageSharp" Version="2.30.15" />
+  </ItemGroup>
+</Project>

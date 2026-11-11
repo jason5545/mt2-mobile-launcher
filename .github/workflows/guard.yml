@@ -1,0 +1,16 @@
+name: Repository guard
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan repository tree
+        run: python3 tools/guard/guard.py --tree HEAD

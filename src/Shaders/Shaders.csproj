@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- shader 轉換（unity-port 的 unity-cs2ts/shaders/convert.py 與 importer/shaders.py）的 C# 版：
+       DX11 bytecode → SPIR-V（dxbc-spirv，P/Invoke）→ 修補 → GLSL ES 3.00（SPIRV-Cross 的 C API，P/Invoke）→ 發布到 <out>/shaders。
+       原生函式庫在 native/dxbc-spirv、native/spirv-cross。Python 相容的 JSON／YAML 與讀原版 build 的工具沿用 Importer。 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Mt2Mobile.Shaders</RootNamespace>
+    <AssemblyName>Mt2Mobile.Shaders</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Importer/Importer.csproj" />
+  </ItemGroup>
+</Project>

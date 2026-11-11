@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Steam（登入、授權、下載）只連 Steam 官方的伺服器 -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- 安裝期間螢幕關掉也要跑（docs/phase4.md「安裝流程」） -->
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <!-- allowNativeHeapPointerTagging=false：Android 在原生 heap 的指標高位元加 tag，AssetRipper 的 FastPng 用 checked 算術處理指標，
+       有 tag 就在匯出貼圖時丟 OverflowException（Phase 4 拆段 A 踩到；Phase 2、3 的測試 app 本來就關掉） -->
+  <application android:label="@string/app_name"
+               android:localeConfig="@xml/locales_config"
+               android:icon="@mipmap/ic_launcher"
+               android:roundIcon="@mipmap/ic_launcher"
+               android:theme="@style/Theme.Mt2Launcher"
+               android:allowBackup="false" android:hasCode="true"
+               android:allowNativeHeapPointerTagging="false" />
+</manifest>

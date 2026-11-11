@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 1 測試 app：沒有 Activity，只用 am instrument 在 app 程序裡跑 converter，不碰畫面。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.mt2mobile.phase1">
+    <application
+        android:label="mt2 phase1"
+        android:hasCode="true"
+        android:extractNativeLibs="true"
+        android:allowNativeHeapPointerTagging="false" />
+    <instrumentation
+        android:name=".Runner"
+        android:targetPackage="org.mt2mobile.phase1"
+        android:label="mt2 phase1 runner" />
+</manifest>

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Facepunch.Steamworks 的轉接：手機上沒有 Steam，回答成「Steam 在、離線、本機一個玩家、沒有 DLC」（跟 TS 版 csport/steamworks.ts 同一套規則） -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Glue.Facepunch</AssemblyName>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <ManagedDir Condition="'$(ManagedDir)' == ''">$(MSBuildThisFileDirectory)../../build/unity-native/managed</ManagedDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(ManagedDir)/Facepunch.Steamworks.Win64.dll" Private="false" />
+    <Reference Include="$(ManagedDir)/UnityEngine.CoreModule.dll" Private="false" />
+  </ItemGroup>
+</Project>

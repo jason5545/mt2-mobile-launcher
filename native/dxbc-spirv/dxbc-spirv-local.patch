@@ -1,0 +1,48 @@
+對 dxbc-spirv c7f0697（https://github.com/doitsujin/dxbc-spirv，MIT，Copyright (c) 2025 Philip Rebohle）的修改；授權全文見 THIRD_PARTY_NOTICES.md。
+diff --git a/dxbc/dxbc_io_map.cpp b/dxbc/dxbc_io_map.cpp
+index d1e9dc2..9c6178d 100644
+--- a/dxbc/dxbc_io_map.cpp
++++ b/dxbc/dxbc_io_map.cpp
+@@ -656,7 +656,9 @@ bool IoMap::declareIoSignatureVars(
+       /* For inputs, mask out unused component at the end. It is not uncommon
+        * for shaders to export vec3, consume vec4, but only actually use the
+        * input as vec3 again. */
+-      if (isInput)
++      /* diceomancer-web: 不做裁減。WebGL2 的 varying 連結要求 VS/FS 型別一致，
++       * 裁減會讓 FS 端比 VS 端窄（例如 vec4 -> vec2）導致 link 失敗。 */
++      if (false && isInput)
+         usedMask &= 0xffu >> util::lzcnt8(uint8_t(e->getUsedComponentMask()));
+ 
+       if (usedMask) {
+diff --git a/tools/dxbc_compiler.cpp b/tools/dxbc_compiler.cpp
+index 0d01570..bf36134 100644
+--- a/tools/dxbc_compiler.cpp
++++ b/tools/dxbc_compiler.cpp
+@@ -52,6 +52,7 @@ struct Options {
+   bool uavBarriers = false;
+   bool debugLog = false;
+   bool compactIds = false;
++  bool cbvArray = false;
+ };
+ 
+ 
+@@ -312,6 +313,10 @@ bool compileShader(util::ByteReader reader, const Options& options) {
+     compileOptions.syncOptions.insertLdsBarriers = options.ldsBarriers;
+     compileOptions.syncOptions.insertUavBarriers = options.uavBarriers;
+ 
++    /* diceomancer-web: WebGL2 需要 std140 合法的 cbuffer；關掉結構化
++     * cbuffer 時一律輸出 vec4 陣列（與 D3D register 版面一致）。 */
++    compileOptions.resourceOptions.structuredCbv = !options.cbvArray;
++
+     compileOptions.cseOptions.relocateDescriptorLoad = true;
+ 
+     compileOptions.descriptorIndexing.optimizeDescriptorIndexing = true;
+@@ -388,6 +393,8 @@ int main(int argc, char** argv) {
+       options.uavBarriers = true;
+     } else if (arg == "--compact-ids") {
+       options.compactIds = true;
++    } else if (arg == "--cbv-array") {
++      options.cbvArray = true;
+     } else if (arg == "--debug") {
+       options.debugLog = true;
+     } else {

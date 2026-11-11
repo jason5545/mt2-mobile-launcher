@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+# 私人清單沒指定時，用 repo 外的預設位置（有這個檔才用）
+if [ -z "${MT2_GUARD_DENYLIST:-}" ] && [ -f "$HOME/.config/mt2-mobile-launcher/guard-denylist.txt" ]; then
+  MT2_GUARD_DENYLIST="$HOME/.config/mt2-mobile-launcher/guard-denylist.txt"
+  export MT2_GUARD_DENYLIST
+fi
+exec python3 tools/guard/guard.py --staged

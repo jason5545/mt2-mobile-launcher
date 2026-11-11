@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Unity 原生引擎（C++）那層的 C# 實作。patcher 改寫過的 UnityEngine.*.dll 把 internal call 接到這裡的 UnityNative.Icalls.* -->
+  <!-- 正本在 unity-port 的 unity-native/engine；mt2-mobile-launcher 的 src/UnityNative 是 tools/sync-engine.sh 同步過去的副本，兩邊逐檔相同。
+       各 repo 不一樣的設定不寫在這裡：ManagedDir 的預設值在外層的 Directory.Build.props，其他由建置腳本用 -p: 傳 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>UnityNative</AssemblyName>
+    <RootNamespace>UnityNative</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Optimize>true</Optimize>
+    <!-- 方法名照 Unity 的（get_transform、Internal_CreateGameObject），命名規則的警告關掉 -->
+    <NoWarn>CS0618;CS8981;CS0649;CS0169;CS0414;CS1998;CS0436;CS8500;CS0108</NoWarn>
+    <!-- ManagedDir：原版 patch 後的 UnityEngine DLL。建置腳本用 -p:ManagedDir= 傳這款遊戲的；沒傳時用外層 Directory.Build.props 的預設 -->
+    <!-- 建置腳本照這款遊戲的 UnityEngine DLL 偵測：沒有的型別定義 NO_<型別>，手寫的新版 icall 用它包起來 -->
+    <DefineConstants>$(DefineConstants);$(UnityDefines)</DefineConstants>
+    <!-- 診斷建置（環境變數 PerfVerify=true）：繪製端把換掉的計算跟舊路徑逐位元組比對（mt2-mobile-launcher 的 docs/perf-battle.md 的正確性閘），發布的不帶 -->
+    <DefineConstants Condition="'$(PerfVerify)' == 'true'">$(DefineConstants);PERF_VERIFY</DefineConstants>
+    <!-- ../Shared/RawTexture.cs 在這裡編成 internal 的一份（公開的在 mt2-mobile-launcher 的 Mt2Mobile.TextureExport） -->
+    <DefineConstants>$(DefineConstants);RAWTEXTURE_INTERNAL</DefineConstants>
+  </PropertyGroup>
+  <!-- 只編手寫的。替身由 patcher 在 patch 時直接寫進 UnityEngine.*.dll；舊版 patcher stubs 留下的 Generated/ 不編 -->
+  <ItemGroup>
+    <Compile Remove="Generated/**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="$(ManagedDir)/UnityEngine*.dll" Exclude="$(ManagedDir)/UnityEngine.dll" Private="false" />
+    <Reference Include="$(ManagedDir)/Unity.TextMeshPro.dll" Private="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- PNG 解碼（純 C#，Android 一樣能用） -->
+    <PackageReference Include="NVorbis" Version="0.10.5" />
+    <PackageReference Include="StbImageSharp" Version="2.30.15" />
+    <!-- 原始壓縮貼圖的容器（../Shared/RawTexture.cs）：LZ4 解壓，同 AssetRipper 用的版本 -->
+    <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 容器格式放在引擎外面的 Shared/（兩個 repo 都在引擎的上一層）：launcher 的匯出、importer 也 Link 同一個檔 -->
+    <Compile Include="../Shared/RawTexture.cs" Link="Shared/RawTexture.cs" />
+  </ItemGroup>
+</Project>

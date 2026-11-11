@@ -1,0 +1,127 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 啟動器（docs/phase4.md）：同一個 app 三個程序。主程序是介面（MainActivity，版面照 Sts2MobileLauncher 的 Material 3 殼，Pages/、Ui/、SteamUi/）；:install 是安裝服務（InstallService：
+       複製原版 → 比對 target → patch → AssetRipper 匯出 → importer → shaders）；:game 是遊戲（GameHost/GameActivity，原型 host-android 搬來的；資料夾不叫 Game：.gitignore 的 game/ 在不分大小寫的檔案系統上會擋到）。
+       引擎在 src/UnityNative、patcher 在 src/Patcher、轉接組件在 src/Glue.*；tools/phase4/build.sh 會先編好它們，再算 patch 的期望值。
+       AssetRipper 同 src/Importer（AssetRipperSource）。 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <!-- SigningInfo（官方建置檢查）要 API 28，見 docs/phase4.md -->
+    <SupportedOSPlatformVersion>28</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Mt2Mobile.Launcher</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- 遊戲的宿主（GameHost/）用 unsafe：GL 的函式指標、影片的 PCM 轉換（同原型 host-android） -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationId>org.mt2mobile.launcher</ApplicationId>
+    <ApplicationTitle>怪物列車2</ApplicationTitle>
+    <ApplicationVersion>2</ApplicationVersion>
+    <ApplicationDisplayVersion>0.2</ApplicationDisplayVersion>
+    <RuntimeIdentifier>android-arm64</RuntimeIdentifier>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <!-- 同原型與 Phase 3：CoreCLR、不修剪、不 AOT（遊戲的 DLL 執行期才載入，修剪器看不到） -->
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <AndroidEnableMarshalMethods>false</AndroidEnableMarshalMethods>
+    <!-- 同桌面命令列（mt2-importer、mt2-shaders）：workstation、非並行 GC -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <!-- 介面照 Build.VERSION.SdkInt 分版本（同 Sts2MobileLauncher），平台版本的分析器關掉 -->
+    <NoWarn>$(NoWarn);CA1416;CA1422</NoWarn>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <!-- 驗收用的入口（路徑匯入、保留工作檔、假的剩餘空間）：只有 -p:TestEntry=true 的建置有，發布的 APK 不帶 -->
+    <DefineConstants Condition="'$(TestEntry)' == 'true'">$(DefineConstants);TEST_ENTRY</DefineConstants>
+    <AssetRipperSource Condition="'$(AssetRipperSource)' == ''">$(MSBuildThisFileDirectory)../../third_party/AssetRipper/build/src/Source</AssetRipperSource>
+    <!-- tools/phase4/build.sh 會把這些輸出放到 repo 外並傳進來；預設值只給 repo 內的本機建置目錄 -->
+    <UnityNativeDll Condition="'$(UnityNativeDll)' == ''">$(MSBuildThisFileDirectory)../../build/unity-native/hand/UnityNative.dll</UnityNativeDll>
+    <ManagedDir Condition="'$(ManagedDir)' == ''">$(MSBuildThisFileDirectory)../../build/unity-native/managed</ManagedDir>
+    <GlueFacepunchDll Condition="'$(GlueFacepunchDll)' == ''">$(MSBuildThisFileDirectory)../../build/unity-native/glue/Glue.Facepunch.dll</GlueFacepunchDll>
+    <GlueMT2Dll Condition="'$(GlueMT2Dll)' == ''">$(MSBuildThisFileDirectory)../../build/unity-native/glue/Glue.MT2.dll</GlueMT2Dll>
+    <PatcherDir Condition="'$(PatcherDir)' == ''">$(MSBuildThisFileDirectory)../../build/unity-native/patcher</PatcherDir>
+    <FacepunchRedirects Condition="'$(FacepunchRedirects)' == ''">$(MSBuildThisFileDirectory)../Glue.Facepunch/redirects.txt</FacepunchRedirects>
+    <Mt2Redirects Condition="'$(Mt2Redirects)' == ''">$(MSBuildThisFileDirectory)../Glue.MT2/redirects.txt</Mt2Redirects>
+    <!-- tools/phase4/build.sh 在開發機 patch 一次算出來的總雜湊（runtime/patch-expect.json） -->
+    <PatchExpect Condition="'$(PatchExpect)' == ''">$(BaseIntermediateOutputPath)phase4/patch-expect.json</PatchExpect>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Importer/Importer.csproj" />
+    <ProjectReference Include="../Shaders/Shaders.csproj" />
+    <ProjectReference Include="$(AssetRipperSource)/AssetRipper.Export.UnityProjects/AssetRipper.Export.UnityProjects.csproj" />
+    <!-- 貼圖保留原始壓縮資料（docs/perf-battle.md「B 段」）：匯出換上的 exporter 與 CPU 解碼的退路，獨立的組件（它的 MVID 進匯出指紋） -->
+    <ProjectReference Include="../TextureExport/TextureExport.csproj" />
+    <!-- AssetRipper.Cpp2IL.Core 帶進來的 libcapstone.so 是 linux-arm64 版（XA0141）：同 Phase 3，參考同一版、排除原生資產 -->
+    <PackageReference Include="AssetRipper.Gee.External.Capstone" Version="2.3.2" ExcludeAssets="native" />
+    <!-- Steam 層（純 net10.0，SteamKit2）與介面的套件 -->
+    <ProjectReference Include="../Steam/Steam.csproj" />
+    <PackageReference Include="Xamarin.Google.Android.Material" Version="1.14.0.6" />
+    <PackageReference Include="QRCoder" Version="1.8.1" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- 引擎：只有手寫部分的 UnityNative.dll，跟 patcher 的 hand 參數用同一份。它參考的 NuGet 套件同引擎的 csproj -->
+    <Reference Include="$(UnityNativeDll)" />
+    <PackageReference Include="NVorbis" Version="0.10.5" />
+    <PackageReference Include="StbImageSharp" Version="2.30.15" />
+    <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
+    <!-- 宿主用到 UnityEngine 的型別（KeyCode）：只在編譯時參考開發機 patch 過的那份，不進 APK（手機上用手機 patch 的） -->
+    <Reference Include="$(ManagedDir)/UnityEngine.CoreModule.dll" Private="false" />
+    <!-- 不帶原型的 DOTNET_GCgen0size=64 MB：AndroidEnvironment 對整個 app 生效，:install 的記憶體峰值會超過 4.74 GB；
+         遊戲帶與不帶各量 2 次，每格平均與最大 ms 差不到 3%（docs/phase4.md「拆段 B 照裁決重跑」，Jason 10/22 定影響不大就拿掉） -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- native/*/build.sh android 的輸出；C# 用短名稱載入 -->
+    <AndroidNativeLibrary Include="../../native/freetype/build/out/android-arm64/libfreetype.so" Abi="arm64-v8a" />
+    <AndroidNativeLibrary Include="../../native/dxbc-spirv/build/out/android-arm64/libdxbcspv.so" Abi="arm64-v8a" />
+    <AndroidNativeLibrary Include="../../native/spirv-cross/build/out/android-arm64/libspirv-cross-c-shared.so" Abi="arm64-v8a" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 執行時從 APK 解到 files/runtime/<APK 的 lastUpdateTime>/（Install/Runtime.cs）。target 只有檔名與雜湊 -->
+    <AndroidAsset Include="../../targets/*.json" Link="targets/%(Filename)%(Extension)" />
+    <AndroidAsset Include="$(PatcherDir)/*.dll;$(PatcherDir)/*.json" Link="runtime/patcher/%(Filename)%(Extension)" />
+    <AndroidAsset Include="$(UnityNativeDll)" Link="runtime/UnityNative.dll" />
+    <!-- 照檔名順序傳給 patcher：引擎的在前、遊戲的在後 -->
+    <AndroidAsset Include="$(FacepunchRedirects)" Link="runtime/redirects/1-engine.txt" />
+    <AndroidAsset Include="$(Mt2Redirects)" Link="runtime/redirects/2-game.txt" />
+    <AndroidAsset Include="$(PatchExpect)" Link="runtime/patch-expect.json" />
+    <!-- 轉接組件：開發機參考 patch 過的遊戲 DLL 編好，遊戲執行時從這裡載入 -->
+    <AndroidAsset Include="$(GlueFacepunchDll)" Link="runtime/glue/Glue.Facepunch.dll" />
+    <AndroidAsset Include="$(GlueMT2Dll)" Link="runtime/glue/Glue.MT2.dll" />
+  </ItemGroup>
+
+  <!-- Release 的 CoreCLR 預設 ReadyToRun composite。AndroidX 的組件被編進 composite 之後，補 API 36 介面方法的步驟要改寫它時失敗
+       （XALNS7015 Writing mixed-mode assemblies is not supported；開發機的介面 app 踩過，10/22 這裡合併後也重現）。
+       只把 Java 綁定的組件（AndroidX、Material、Kotlin 這些，68 個，跟著套件版本變）排除，其他照舊 R2R：遊戲、AssetRipper、importer 的速度不變 -->
+  <Target Name="ExcludeJavaBindingsFromReadyToRun" BeforeTargets="_PrepareForReadyToRunCompilation">
+    <!-- R2R 只編 ResolvedFileToPublish 裡 PostprocessAssembly=true 的組件（Microsoft.NET.CrossGen.targets 的 _PrepareForReadyToRunCompilation）。
+         PublishReadyToRunExclude 在這裡沒有生效（10/22 試過：名單傳進去了，AndroidX 照樣進 composite），改成直接把標記拿掉 -->
+    <ItemGroup>
+      <ResolvedFileToPublish Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)', '^Xamarin\.(AndroidX|Google|Kotlin|KotlinX|Jetbrains)\.'))">
+        <PostprocessAssembly>false</PostprocessAssembly>
+      </ResolvedFileToPublish>
+      <_JavaBinding Include="@(ResolvedFileToPublish->WithMetadataValue('PostprocessAssembly', 'false'))"
+                    Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)', '^Xamarin\.(AndroidX|Google|Kotlin|KotlinX|Jetbrains)\.'))" />
+    </ItemGroup>
+    <Message Importance="high" Text="ReadyToRun 排除 @(_JavaBinding->Count()) 個 Java 綁定組件" />
+  </Target>
+
+  <!-- 效能診斷（docs/perf-battle.md）：環境變數 PerfEnvFile 指一個 repo 外的「變數=值」檔（例如 DOTNET_PerfMapEnabled 讓 simpleperf 看得到 JIT 的方法名、
+       DOTNET_DiagnosticPorts 給 dotnet-gcdump），編進這份 APK 的 environment。對三個程序都生效，只給量測用的建置，發布的不帶 -->
+  <ItemGroup Condition="'$(PerfEnvFile)' != ''">
+    <AndroidEnvironment Include="$(PerfEnvFile)" />
+  </ItemGroup>
+
+  <Target Name="RequireLauncherInputs" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(AssetRipperSource)/AssetRipper.Export.UnityProjects/AssetRipper.Export.UnityProjects.csproj')" Text="找不到 AssetRipper 的原始碼 $(AssetRipperSource)：先跑 third_party/AssetRipper/fetch.sh（tools/phase4/build.sh 會做）" />
+    <Error Condition="!Exists('$(PatcherDir)/patcher.dll')" Text="先用 Release 編 src/Patcher（tools/phase4/build.sh 會做）" />
+    <Error Condition="!Exists('$(UnityNativeDll)')" Text="缺手寫引擎 $(UnityNativeDll)（tools/phase4/build.sh 會產生）" />
+    <Error Condition="!Exists('$(GlueFacepunchDll)') Or !Exists('$(GlueMT2Dll)')" Text="缺轉接組件（tools/phase4/build.sh 會產生）" />
+    <Error Condition="!Exists('$(PatchExpect)')" Text="缺 patch 的期望值 $(PatchExpect)（tools/phase4/build.sh 會產生）" />
+    <Error Condition="!Exists('../../native/dxbc-spirv/build/out/android-arm64/libdxbcspv.so')" Text="先跑 native/*/build.sh android" />
+  </Target>
+</Project>

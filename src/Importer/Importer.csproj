@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- importer（unity-port 的 unity-cs2ts/importer，Python）的 C# 版。輸入：AssetRipper 的匯出、原版 build、cs2ts.json 的 import 段；
+       輸出跟 Python 版逐位元組相同（比對標準見 docs/phase3.md）。手機的宿主與桌面的 Importer.Cli 都參考這個函式庫。
+       AssetRipper 從原始碼參考（third_party/AssetRipper/fetch.sh 抓上游加 patch，預設在 third_party/AssetRipper/build/src，用 -p:AssetRipperSource=… 換）。 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Mt2Mobile.Importer</RootNamespace>
+    <AssemblyName>Mt2Mobile.Importer</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssetRipperSource Condition="'$(AssetRipperSource)' == ''">$(MSBuildThisFileDirectory)../../third_party/AssetRipper/build/src/Source</AssetRipperSource>
+    <!-- src/Shared/RawTexture.cs 在這裡編成 internal 的一份（公開的在 Mt2Mobile.TextureExport） -->
+    <DefineConstants>$(DefineConstants);RAWTEXTURE_INTERNAL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+    <!-- supplement 的欄位結構：跟 Python 的 TypeTreeGeneratorAPI 0.0.10 同一個後端與版本 -->
+    <PackageReference Include="AssetsTools.NET" Version="3.0.1" />
+    <PackageReference Include="AssetsTools.NET.MonoCecil" Version="1.0.1" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(AssetRipperSource)/AssetRipper.Import/AssetRipper.Import.csproj" />
+    <ProjectReference Include="$(AssetRipperSource)/AssetRipper.Export.Modules.Textures/AssetRipper.Export.Modules.Textures.csproj" />
+    <!-- 匯出保留原始壓縮資料的貼圖（docs/perf-battle.md「B 段」）：讀容器的標頭 -->
+    <Compile Include="../Shared/RawTexture.cs" Link="Shared/RawTexture.cs" />
+  </ItemGroup>
+
+  <Target Name="RequireAssetRipperSource" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(AssetRipperSource)/AssetRipper.Import/AssetRipper.Import.csproj')" Text="找不到 AssetRipper 的原始碼 $(AssetRipperSource)：先跑 third_party/AssetRipper/fetch.sh（或用 -p:AssetRipperSource= 指定）" />
+  </Target>
+</Project>

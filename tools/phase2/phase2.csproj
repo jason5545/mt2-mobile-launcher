@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Mt2Mobile.Phase2</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationId>org.mt2mobile.phase2</ApplicationId>
+    <ApplicationTitle>MT2 Phase 2 runner</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <RuntimeIdentifier>android-arm64</RuntimeIdentifier>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <Phase2PatcherDir Condition="'$(Phase2PatcherDir)' == ''">$(MSBuildThisFileDirectory)../../build/unity-native/patcher</Phase2PatcherDir>
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <AndroidEnableMarshalMethods>false</AndroidEnableMarshalMethods>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AndroidAsset Include="$(Phase2PatcherDir)/*.dll;$(Phase2PatcherDir)/*.json"
+                  Link="phase2/patcher/%(Filename)%(Extension)" />
+    <AndroidAsset Include="$(Phase2InputDir)/UnityNative.dll"
+                  Link="phase2/input/UnityNative.dll"
+                  Condition="'$(Phase2InputDir)' != ''" />
+    <AndroidAsset Include="../../src/Glue.Facepunch/redirects.txt"
+                  Link="phase2/redirects/Facepunch.txt" />
+    <AndroidAsset Include="../../src/Glue.MT2/redirects.txt"
+                  Link="phase2/redirects/Game.txt" />
+    <AndroidAsset Include="$(Phase2AssetRipperDir)/*.dll;$(Phase2AssetRipperDir)/*.deps.json;$(Phase2AssetRipperDir)/*.runtimeconfig.json"
+                  Link="phase2/assetripper/%(Filename)%(Extension)"
+                  Condition="Exists('$(Phase2AssetRipperDir)/AssetRipper.CLI.dll')" />
+  </ItemGroup>
+
+  <Target Name="RequirePhase2Input" BeforeTargets="PrepareForBuild"
+          Condition="'$(Phase2InputDir)' == ''">
+    <Error Text="Pass -p:Phase2InputDir pointing to the external Phase 2 input directory." />
+  </Target>
+  <Target Name="RequirePhase2Patcher" BeforeTargets="PrepareForBuild"
+          Condition="!Exists('$(Phase2PatcherDir)/patcher.dll')">
+    <Error Text="Build src/Patcher in Release before building the Phase 2 app." />
+  </Target>
+</Project>

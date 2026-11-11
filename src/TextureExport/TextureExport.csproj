@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 貼圖保留原始壓縮資料（docs/perf-battle.md「B 段」）：AssetRipper 匯出時換上的貼圖 exporter、裝置格式的決定、CPU 解碼的退路。
+       獨立成一個組件：安裝的匯出指紋取這個組件與它參考的 AssetRipper 的 MVID（Installer.Fingerprints），改這裡才會觸發重新匯出，
+       啟動器其他地方改了不會。手機的啟動器與桌面的比對工具（tools/texture-check）都參考這一份。 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Mt2Mobile.TextureExport</RootNamespace>
+    <AssemblyName>Mt2Mobile.TextureExport</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssetRipperSource Condition="'$(AssetRipperSource)' == ''">$(MSBuildThisFileDirectory)../../third_party/AssetRipper/build/src/Source</AssetRipperSource>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(AssetRipperSource)/AssetRipper.Export.UnityProjects/AssetRipper.Export.UnityProjects.csproj" />
+    <Compile Include="../Shared/RawTexture.cs" Link="Shared/RawTexture.cs" />
+  </ItemGroup>
+
+  <Target Name="RequireAssetRipperSource" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(AssetRipperSource)/AssetRipper.Import/AssetRipper.Import.csproj')" Text="找不到 AssetRipper 的原始碼 $(AssetRipperSource)：先跑 third_party/AssetRipper/fetch.sh（或用 -p:AssetRipperSource= 指定）" />
+  </Target>
+</Project>

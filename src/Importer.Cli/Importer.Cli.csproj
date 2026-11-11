@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 桌面命令列：讀跟 unity-cs2ts/importer/run.py 一樣的設定檔與步驟名稱，給開發機產生基準與比對用 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Mt2Mobile.Importer.Cli</RootNamespace>
+    <AssemblyName>mt2-importer</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Importer/Importer.csproj" />
+  </ItemGroup>
+
+  <!-- FreeType：native/freetype/build.sh macos 編出來的 dylib -->
+  <ItemGroup>
+    <None Include="../../native/freetype/build/out/osx-arm64/libfreetype.dylib" Condition="Exists('../../native/freetype/build/out/osx-arm64/libfreetype.dylib')"
+          Link="libfreetype.dylib" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

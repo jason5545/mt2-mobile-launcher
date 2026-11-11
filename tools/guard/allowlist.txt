@@ -1,0 +1,32 @@
+# Exact-path exceptions only. Format: repository/path<TAB>rule-name<TAB>one-sentence reason.
+# Example (commented): src/Launcher/Resources/sample.svg<TAB>media-file<TAB>Hand-written vector artwork for the launcher.
+src/Launcher/Resources/mipmap/ic_launcher.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap/ic_launcher_foreground.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap/ic_launcher_background.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-mdpi-v4/ic_launcher.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-mdpi-v4/ic_launcher_foreground.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-mdpi-v4/ic_launcher_background.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-hdpi-v4/ic_launcher.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-hdpi-v4/ic_launcher_foreground.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-hdpi-v4/ic_launcher_background.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-xhdpi-v4/ic_launcher.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-xhdpi-v4/ic_launcher_foreground.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-xhdpi-v4/ic_launcher_background.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-xxhdpi-v4/ic_launcher.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-xxhdpi-v4/ic_launcher_foreground.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-xxhdpi-v4/ic_launcher_background.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-xxxhdpi-v4/ic_launcher.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-xxxhdpi-v4/ic_launcher_foreground.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+src/Launcher/Resources/mipmap-xxxhdpi-v4/ic_launcher_background.png	media-file	原創啟動器圖示素材，未使用遊戲素材
+screenshots/en/1-game.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/en/2-steam.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/en/3-settings.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/en/4-about.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/zh-TW/1-game.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/zh-TW/2-steam.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/zh-TW/3-settings.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/zh-TW/4-about.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/zh-CN/1-game.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/zh-CN/2-steam.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/zh-CN/3-settings.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材
+screenshots/zh-CN/4-about.jpg	media-file	啟動器介面截圖（未安裝遊戲、未登入），沒有遊戲畫面或遊戲素材

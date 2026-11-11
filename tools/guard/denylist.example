@@ -1,0 +1,3 @@
+# Keep the real list outside this repository and point MT2_GUARD_DENYLIST to it.
+# One exact private string per non-empty line; blank lines and lines starting with # are ignored.
+# Add local host, account, device model, or serial values here only in the external file.

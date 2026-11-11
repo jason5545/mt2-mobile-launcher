@@ -1,0 +1,4 @@
+[
+ {"dir": "export", "ScriptExportMode": "Hybrid", "ShaderExportMode": "Dummy", "EnableStaticMeshSeparation": true},
+ {"dir": "export-shaders", "ScriptExportMode": "Hybrid", "ShaderExportMode": "Yaml", "EnableStaticMeshSeparation": false}
+]
